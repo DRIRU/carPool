@@ -85,7 +85,10 @@
         function error(err) {
             console.warn(`ERROR(${err.code}): ${err.message}`);
         }
-
+        function resizeMap() {
+            map.getViewPort().resize();
+        }
+        window.addEventListener('resize', resizeMap);
         function searchPlace() {
             const originInput = document.getElementById('originInput').value;
             const destinationInput = document.getElementById('destinationInput').value;
