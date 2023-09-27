@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HERE Maps with Current Location, Starting Point, and Place Search</title>
+    <!-- Include HERE Maps API scripts -->
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js"></script>
+    <!-- Include HERE Maps Events library -->
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
+</head>
+<body>
+    <!-- Origin (Starting Point) input -->
+    <div>
+        <input type="text" id="originInput" placeholder="Starting Point">
+        <input type="text" id="destinationInput" placeholder="Destination">
+        <button onclick="searchPlace()">Search</button>
+    </div>
+
+    <!-- Container for the map -->
+    <div id="mapContainer" style="width: 100%; height: 400px;"></div>
+
+    <script>
+        let map;
+        let platform; // Declare platform at a global scope
+        let ui; // Declare ui at a global scope
+
+        // Initialize the map with the current location
+        navigator.geolocation.getCurrentPosition(success, error);
+
+        function success(position) {
+            // Get the current latitude and longitude
+            //const latitude = position.coords.latitude;
+            //const longitude = position.coords.longitude;
+            const latitude = 10.067782206681201;
+            const longitude = 76.32732722987745;
+            
+            platform = new H.service.Platform({
+                apikey: '6jA_jHwt-_6PahmL1AiusuJb6h9Occ5NkUJVNnCDt_c', // Replace with your App ID and App Code
+            });
+
+            const defaultLayers = platform.createDefaultLayers();
+
+            map = new H.Map(
+                document.getElementById('mapContainer'),
+                defaultLayers.vector.normal.map,
+                {
+                    center: { lat: latitude, lng: longitude }, // Set map center to current location
+                    zoom: 14, // Initial zoom level
+                }
+            );
+
+            // Enable map interaction
+            const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+
+            // Initialize the UI (including the ui object)
+            ui = H.ui.UI.createDefault(map);
+        }
+
+        function error(err) {
+            console.warn(`ERROR(${err.code}): ${err.message}`);
+        }
+
+        function searchPlace() {
+            const originInput = document.getElementById('originInput').value;
+            const destinationInput = document.getElementById('destinationInput').value;
+
+            // Ensure that the platform object is initialized
+            if (!platform) {
+                alert('Map platform not initialized. Please wait for map initialization.');
+                return;
+            }
+
+            // Use the Geocoding and Search service to find places
+            const geocodingService = platform.getSearchService();
+
+            geocodingService.geocode(
+                {
+                    q: originInput, // Origin (Starting Point)
+                },
+                (originResult) => {
+                    if (originResult.items.length === 0) {
+                        alert('Starting point not found.');
+                        return;
+                    }
+
+                    // Get the location of the starting point
+                    const originLocation = originResult.items[0].position;
+
+                    // Continue with the search for the destination (place)
+                    geocodingService.geocode(
+                        {
+                            q: destinationInput, // Destination (Place)
+                        },
+                        (destinationResult) => {
+                            if (destinationResult.items.length > 0) {
+                                // Get the location and title of the destination (place)
+                                const destinationLocation = destinationResult.items[0].position;
+
+                                // Clear existing markers
+                                map.removeObjects(map.getObjects());
+
+                                // Create markers for the starting point and destination
+                                const originMarker = new H.map.Marker(originLocation);
+                                const destinationMarker = new H.map.Marker(destinationLocation);
+
+                                // Add the markers to the map
+                                map.addObjects([originMarker, destinationMarker]);
+
+                                // Zoom the map to fit both markers
+                                map.getViewModel().setLookAtData({
+                                    bounds: map.getBoundingBox(),
+                                });
+                            } else {
+                                alert('Place not found.');
+                            }
+                        },
+                        (error) => {
+                            console.error('Error:', error);
+                        }
+                    );
+                },
+                (error) => {
+                    console.error('Error:', error);
+                }
+            );
+        }
+    </script>
+</body>
+</html>
