@@ -31,37 +31,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HERE</title>
-    <!-- Include HERE Maps API scripts -->
     <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
     <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js"></script>
-    <!-- Include HERE Maps Events library -->
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js"></script>
     <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
 </head>
 <body>
-    <!-- Origin (Starting Point) input -->
     <div id="mapContainer"></div>
     <div class="input-container">
         <input type="text" id="originInput" placeholder="Starting">
         <input type="text" id="destinationInput" placeholder="Destination">
-        <button onclick="searchPlace()">Search</button>
+        <button onclick="findRoute()">Search</button>
     </div>
     <script>
         let map;
-        let platform; // Declare platform at a global scope
-        let ui; // Declare ui at a global scope
-
-        // Initialize the map with the current location
+        let platform; 
+        let ui; 
+        let origin;
+        let destination;
+        let originLocation;
+        let destinationLocation;
         navigator.geolocation.getCurrentPosition(success, error);
 
         function success(position) {
-            // Get the current latitude and longitude
             //const latitude = position.coords.latitude;
             //const longitude = position.coords.longitude;
             const latitude = 10.067782206681201;
             const longitude = 76.32732722987745;
             
             platform = new H.service.Platform({
-                apikey: '6jA_jHwt-_6PahmL1AiusuJb6h9Occ5NkUJVNnCDt_c', // Replace with your App ID and App Code
+                apikey: '6jA_jHwt-_6PahmL1AiusuJb6h9Occ5NkUJVNnCDt_c',
+                app_id: 'F3mZQSJrBHnJkQSOlXzn',
             });
 
             const defaultLayers = platform.createDefaultLayers();
@@ -70,16 +70,13 @@
                 document.getElementById('mapContainer'),
                 defaultLayers.vector.normal.map,
                 {
-                    center: { lat: latitude, lng: longitude }, // Set map center to current location
-                    zoom: 14, // Initial zoom level
+                    center: { lat: latitude, lng: longitude }, 
+                    zoom: 14, 
                 }
             );
-
-            // Enable map interaction
             const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
-
-            // Initialize the UI (including the ui object)
             ui = H.ui.UI.createDefault(map);
+            ui.getControl('zoom').setEnabled(true);
         }
 
         function error(err) {
@@ -89,9 +86,10 @@
             map.getViewPort().resize();
         }
         window.addEventListener('resize', resizeMap);
+        
         function searchPlace() {
-            const originInput = document.getElementById('originInput').value;
-            const destinationInput = document.getElementById('destinationInput').value;
+            origin = document.getElementById('originInput').value;
+            destination = document.getElementById('destinationInput').value;
 
             // Ensure that the platform object is initialized
             if (!platform) {
@@ -104,55 +102,118 @@
 
             geocodingService.geocode(
                 {
-                    q: originInput, // Origin (Starting Point)
+                    q: origin,
                 },
                 (originResult) => {
                     if (originResult.items.length === 0) {
                         alert('Starting point not found.');
                         return;
                     }
-
-                    // Get the location of the starting point
-                    const originLocation = originResult.items[0].position;
-
-                    // Continue with the search for the destination (place)
+                    originLocation = originResult.items[0].position;
                     geocodingService.geocode(
                         {
-                            q: destinationInput, // Destination (Place)
+                            q: destination,
                         },
                         (destinationResult) => {
                             if (destinationResult.items.length > 0) {
-                                // Get the location and title of the destination (place)
-                                const destinationLocation = destinationResult.items[0].position;
-
-                                // Clear existing markers
+                                destinationLocation = destinationResult.items[0].position;
                                 map.removeObjects(map.getObjects());
-
-                                // Create markers for the starting point and destination
                                 const originMarker = new H.map.Marker(originLocation);
                                 const destinationMarker = new H.map.Marker(destinationLocation);
-
-                                // Add the markers to the map
                                 map.addObjects([originMarker, destinationMarker]);
-
-                                // Zoom the map to fit both markers
-                                map.getViewModel().setLookAtData({
-                                    bounds: map.getBoundingBox(),
-                                });
-                            } else {
-                                alert('Place not found.');
+                                const router = platform.getRoutingService(null, 8);
+                                const routeRequestParams = {
+                                    'routingMode': 'fastest',
+                                    'transportMode': 'car',
+                                    //representation: 'display',
+                                    'origin': String(originLocation.lat)+","+String(originLocation.lng),
+                                    'destination': String(destinationLocation.lat)+","+String(destinationLocation.lng), // Use waypoint1 for destination
+                                    //routeattributes: 'waypoints,summary,shape,legs',
+                                    //maneuverattributes: 'direction,action',
+                                    //language: 'en-us',
+                                    return: 'polyline'
+                                };
+                                //console.log(String(originLocation.lat) + String(originLocation.lng));
+                                //console.log(String(destinationLocation.lat) + String(destinationLocation.lng));
+                                router.calculateRoute(routeRequestParams, onSuccess, onError);
+                            } 
+                            else {
+                                alert(String('destination not found'));
                             }
                         },
                         (error) => {
-                            console.error('Error:', error);
+                            console.error('Error:', error.message);
+                            alert(String(error.message));
                         }
                     );
                 },
                 (error) => {
-                    console.error('Error:', error);
+                    console.error('Error:', error.message);
+                    alert(String(error.message));
                 }
             );
+
         }
+        function findRoute() {
+            // Get the start and destination places from the input fields
+            /*const startLat = document.getElementById("originInputLat").value;
+            const startLng = document.getElementById("originInputLat").value;
+            const destinationLat = document.getElementById("destinationInputLat").value;
+            const destinationLng = document.getElementById("destinationInputLng").value;
+            */
+           
+            const startPlace = "10.10717,76.3642";
+            const destinationPlace = "10.77581,76.65813";
+            // Create a routing service object
+            const router = platform.getRoutingService(null, 8);
+
+            // Create a route request object
+            var routingParameters = {
+                'routingMode': 'fast',
+                'transportMode': 'car',
+                // The start point of the route:
+                'origin': '50.1120423728813,8.68340740740811',
+                // The end point of the route:
+                'destination': '52.5309916298853,13.3846220493377',
+                // Include the route shape in the response
+                'return': 'polyline'
+            };
+
+            // Calculate the route
+            router.calculateRoute(routingParameters, onSuccess, onError);
+            }
+        function onSuccess(result) {
+            // ensure that at least one route was found
+            if (result.routes.length) {
+                result.routes[0].sections.forEach((section) => {
+                    // Create a linestring to use as a point source for the route line
+                    let linestring = H.geo.LineString.fromFlexiblePolyline(section.polyline);
+
+                    // Create a polyline to display the route:
+                    let routeLine = new H.map.Polyline(linestring, {
+                    style: { strokeColor: 'blue', lineWidth: 3 }
+                    });
+
+                    // Create a marker for the start point:
+                    let startMarker = new H.map.Marker(section.departure.place.location);
+
+                    // Create a marker for the end point:
+                    let endMarker = new H.map.Marker(section.arrival.place.location);
+
+                    // Add the route polyline and the two markers to the map:
+                    map.addObjects([routeLine, startMarker, endMarker]);
+
+                    // Set the map's viewport to make the whole route visible:
+                    map.getViewModel().setLookAtData({bounds: routeLine.getBoundingBox()});
+                });
+            }
+        }
+
+        function onError(error) {
+            console.error('Error calculating the route:', error);
+            alert(String(error.message));
+        }
+
     </script>
 </body>
 </html>
