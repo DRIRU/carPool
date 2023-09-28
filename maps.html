@@ -41,7 +41,7 @@
     <div class="input-container">
         <input type="text" id="originInput" placeholder="Starting">
         <input type="text" id="destinationInput" placeholder="Destination">
-        <button onclick="findRoute()">Search</button>
+        <button onclick="findCoords()">Search</button>
     </div>
     <script>
         let map;
@@ -87,7 +87,7 @@
         }
         window.addEventListener('resize', resizeMap);
         
-        function searchPlace() {
+        function findCoords() {
             origin = document.getElementById('originInput').value;
             destination = document.getElementById('destinationInput').value;
 
@@ -117,25 +117,11 @@
                         (destinationResult) => {
                             if (destinationResult.items.length > 0) {
                                 destinationLocation = destinationResult.items[0].position;
-                                map.removeObjects(map.getObjects());
-                                const originMarker = new H.map.Marker(originLocation);
-                                const destinationMarker = new H.map.Marker(destinationLocation);
-                                map.addObjects([originMarker, destinationMarker]);
-                                const router = platform.getRoutingService(null, 8);
-                                const routeRequestParams = {
-                                    'routingMode': 'fastest',
-                                    'transportMode': 'car',
-                                    //representation: 'display',
-                                    'origin': String(originLocation.lat)+","+String(originLocation.lng),
-                                    'destination': String(destinationLocation.lat)+","+String(destinationLocation.lng), // Use waypoint1 for destination
-                                    //routeattributes: 'waypoints,summary,shape,legs',
-                                    //maneuverattributes: 'direction,action',
-                                    //language: 'en-us',
-                                    return: 'polyline'
-                                };
+                                //const originMarker = new H.map.Marker(originLocation);
+                                //const destinationMarker = new H.map.Marker(destinationLocation);
+                                //map.addObjects([originMarker, destinationMarker]);
                                 //console.log(String(originLocation.lat) + String(originLocation.lng));
                                 //console.log(String(destinationLocation.lat) + String(destinationLocation.lng));
-                                router.calculateRoute(routeRequestParams, onSuccess, onError);
                             } 
                             else {
                                 alert(String('destination not found'));
@@ -152,36 +138,31 @@
                     alert(String(error.message));
                 }
             );
-
-        }
-        function findRoute() {
-            // Get the start and destination places from the input fields
-            /*const startLat = document.getElementById("originInputLat").value;
-            const startLng = document.getElementById("originInputLat").value;
-            const destinationLat = document.getElementById("destinationInputLat").value;
-            const destinationLng = document.getElementById("destinationInputLng").value;
-            */
-           
-            const startPlace = "10.10717,76.3642";
-            const destinationPlace = "10.77581,76.65813";
-            // Create a routing service object
+            //console.log(originLocation.lat);
+            //console.log(originLocation.lng);
+            var destinationCoordinates = String(destinationLocation.lat)+","+String(destinationLocation.lng);
+            var originCoordinates = String(originLocation.lat)+","+String(originLocation.lng);
+            console.log(destinationCoordinates);
+            console.log(originCoordinates)
+            findRoute(originCoordinates, destinationCoordinates);
+}       
+        function findRoute(originCoordinates, destinationCoordinates){
+            console.log(String(originCoordinates));
+            console.log(String(destinationCoordinates)); 
             const router = platform.getRoutingService(null, 8);
-
-            // Create a route request object
-            var routingParameters = {
+            const routeRequestParams = {
                 'routingMode': 'fast',
                 'transportMode': 'car',
-                // The start point of the route:
-                'origin': '50.1120423728813,8.68340740740811',
-                // The end point of the route:
-                'destination': '52.5309916298853,13.3846220493377',
-                // Include the route shape in the response
-                'return': 'polyline'
+                'origin': originCoordinates,
+                'destination': destinationCoordinates, 
+                //representation: 'display',
+                //routeattributes: 'waypoints,summary,shape,legs',
+                //maneuverattributes: 'direction,action',
+                //language: 'en-us',
+                return: 'polyline'
             };
-
-            // Calculate the route
-            router.calculateRoute(routingParameters, onSuccess, onError);
-            }
+            router.calculateRoute(routeRequestParams, onSuccess, onError);
+        }
         function onSuccess(result) {
             // ensure that at least one route was found
             if (result.routes.length) {
@@ -201,6 +182,7 @@
                     let endMarker = new H.map.Marker(section.arrival.place.location);
 
                     // Add the route polyline and the two markers to the map:
+                    map.removeObjects(map.getObjects());
                     map.addObjects([routeLine, startMarker, endMarker]);
 
                     // Set the map's viewport to make the whole route visible:
