@@ -14,8 +14,8 @@ function success(position) {
     const longitude = 76.32732722987745;
     
     platform = new H.service.Platform({
-        apikey: '6jA_jHwt-_6PahmL1AiusuJb6h9Occ5NkUJVNnCDt_c',
-        app_id: 'F3mZQSJrBHnJkQSOlXzn',
+        apikey: config.API_KEY,
+        app_id: config.APP_ID,
     });
 
     const defaultLayers = platform.createDefaultLayers();
