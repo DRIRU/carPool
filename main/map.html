@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Map App</title>
+
+    <link rel="stylesheet" href="https://js.api.here.com/v3/3.1/mapsjs-ui.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
+    <script src="scripts.js"></script>
+
+</head>
+<body>
+    <div id="mapContainer"></div>
+    <div class="input-container">
+        <input type="text" id="originInput" placeholder="Starting">
+        <input type="text" id="destinationInput" placeholder="Destination">
+        <button onclick="findCoords()">Search</button>
+        <button id="setOriginButton" onclick="enableSetOriginMode()">Set Origin</button> 
+        <button id="setDestinationButton" onclick="enableSetDestinationMode()">Set Destination</button>
+    </div>
+</body>
+</html>
