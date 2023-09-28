@@ -117,11 +117,10 @@
                         (destinationResult) => {
                             if (destinationResult.items.length > 0) {
                                 destinationLocation = destinationResult.items[0].position;
-                                //const originMarker = new H.map.Marker(originLocation);
-                                //const destinationMarker = new H.map.Marker(destinationLocation);
-                                //map.addObjects([originMarker, destinationMarker]);
-                                //console.log(String(originLocation.lat) + String(originLocation.lng));
-                                //console.log(String(destinationLocation.lat) + String(destinationLocation.lng));
+                                var destinationCoordinates = String(destinationLocation.lat)+","+String(destinationLocation.lng);
+                                var originCoordinates = String(originLocation.lat)+","+String(originLocation.lng);
+                                findRoute(originCoordinates, destinationCoordinates);
+
                             } 
                             else {
                                 alert(String('destination not found'));
@@ -138,17 +137,8 @@
                     alert(String(error.message));
                 }
             );
-            //console.log(originLocation.lat);
-            //console.log(originLocation.lng);
-            var destinationCoordinates = String(destinationLocation.lat)+","+String(destinationLocation.lng);
-            var originCoordinates = String(originLocation.lat)+","+String(originLocation.lng);
-            console.log(destinationCoordinates);
-            console.log(originCoordinates)
-            findRoute(originCoordinates, destinationCoordinates);
 }       
         function findRoute(originCoordinates, destinationCoordinates){
-            console.log(String(originCoordinates));
-            console.log(String(destinationCoordinates)); 
             const router = platform.getRoutingService(null, 8);
             const routeRequestParams = {
                 'routingMode': 'fast',
