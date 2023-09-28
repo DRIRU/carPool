@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<style>
+    /* Styles for the map container */
+    #mapContainer {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        padding: 0px;
+        border: none;
+    }
+
+    /* Styles for the input container */
+    .input-container {
+        position: absolute;
+        top: 5%; /* Align to the top of the window */
+        left: 50%;
+        transform: translateX(-50%); /* Center horizontally */
+        background-color: rgba(255, 255, 255, 0.8);
+        padding: 2px;
+        border-radius: 5px;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    }
+    html, body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+</style>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HERE</title>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
+</head>
+<body>
+    <div id="mapContainer"></div>
+    <div class="input-container">
+        <input type="text" id="originInput" placeholder="Starting">
+        <input type="text" id="destinationInput" placeholder="Destination">
+        <button onclick="findCoords()">Search</button>
+        <button id="setOriginButton" onclick="enableSetOriginMode()">Set Origin</button>
+        <button id="setDestinationButton" onclick="enableSetDestinationMode()">Set Destination</button>
+    </div>
+    <script>
+        let map;
+        let platform; 
+        let ui; 
+        let origin, destination;
+        let originLocation, destinationLocation;
+        let originMarker, destinationMarker;
+        let destinationCoordinates, originCoordinates;
+
+        navigator.geolocation.getCurrentPosition(success, error);
+
+        function success(position) {
+            const latitude = 10.067782206681201;
+            const longitude = 76.32732722987745;
+
+            platform = new H.service.Platform({
+                apikey: '6jA_jHwt-_6PahmL1AiusuJb6h9Occ5NkUJVNnCDt_c',
+                app_id: 'F3mZQSJrBHnJkQSOlXzn',
+            });
+
+            const defaultLayers = platform.createDefaultLayers();
+
+            map = new H.Map(
+                document.getElementById('mapContainer'),
+                defaultLayers.vector.normal.map,
+                {
+                    center: { lat: latitude, lng: longitude }, 
+                    zoom: 14, 
+                }
+            );
+
+            const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+            ui = H.ui.UI.createDefault(map);
+            ui.getControl('zoom').setEnabled(true);
+        }
+
+        function error(err) {
+            console.warn(`ERROR(${err.code}): ${err.message}`);
+        }
+      
+        function resizeMap() {
+            map.getViewPort().resize();
+        }
+      
+        window.addEventListener('resize', resizeMap);
+      
+        const isCoords = str => /^-?\d+\.?\d*,-?\d+\.?\d*$/.test(str);
+      
+        function findCoords(){
+            origin = document.getElementById('originInput').value;
+            destination = document.getElementById('destinationInput').value;
+            // Ensure that the platform object is initialized
+            if (!platform) {
+                alert('Map platform not initialized. Please wait for map initialization.');
+                return;
+            }
+            if(isCoords(origin)){
+                if(isCoords(destination)){
+                    findRoute(origin, destination);
+                }
+            }
+            else{
+                const geocodingService = platform.getSearchService();
+                geocodingService.geocode(
+                    {
+                        q: origin,
+                    },
+                    (originResult) => {
+                        if (originResult.items.length === 0) {
+                            alert('Starting point not found.');
+                            return;
+                        }
+                        originLocation = originResult.items[0].position;
+                        geocodingService.geocode(
+                            {
+                                q: destination,
+                            },
+                            (destinationResult) => {
+                                if (destinationResult.items.length === 0) {
+                                    alert(String('destination not found')); 
+                                } 
+                                destinationLocation = destinationResult.items[0].position;
+                                destinationCoordinates = String(destinationLocation.lat)+","+String(destinationLocation.lng);
+                                originCoordinates = String(originLocation.lat)+","+String(originLocation.lng);
+                                findRoute(originCoordinates, destinationCoordinates);
+                            },
+                            (error) => {
+                                console.error('Error:', error.message);
+                                alert(String(error.message));
+                            }
+                        );
+                    },
+                    (error) => {
+                        console.error('Error:', error.message);
+                        alert(String(error.message));
+                    }
+                );
+            }
+            // Use the Geocoding and Search service to find places
+            
+        }       
+        
+        function enableSetOriginMode() {
+            
+            map.addEventListener('tap', setOriginPin);
+        }
+        
+        function enableSetDestinationMode() {
+            
+            map.addEventListener('tap', setDestinationPin);
+        }
+        
+        function setOriginPin(evt) {
+            originLocation = map.screenToGeo(evt.currentPointer.viewportX, evt.currentPointer.viewportY);
+            if (originMarker) {
+                map.removeObject(originMarker);
+            }
+            originMarker = new H.map.Marker(originLocation);
+            map.addObject(originMarker);
+            document.getElementById('originInput').value = originLocation.lat + ',' + originLocation.lng;
+            map.removeEventListener('tap', setOriginPin);
+        }
+        
+        function setDestinationPin(evt) {
+            destinationLocation = map.screenToGeo(evt.currentPointer.viewportX, evt.currentPointer.viewportY);
+            if (destinationMarker) {
+                map.removeObject(destinationMarker);
+            }
+            destinationMarker = new H.map.Marker(destinationLocation);
+            map.addObject(destinationMarker);
+            document.getElementById('destinationInput').value = destinationLocation.lat + ',' + destinationLocation.lng;
+            map.removeEventListener('tap', setDestinationPin);
+        }
+        
+        function findRoute(originCoordinates, destinationCoordinates){
+            const router = platform.getRoutingService(null, 8);
+            const routeRequestParams = {
+                'routingMode': 'fast',
+                'transportMode': 'car',
+                'origin': originCoordinates,
+                'destination': destinationCoordinates, 
+                //representation: 'display',
+                //routeattributes: 'waypoints,summary,shape,legs',
+                //maneuverattributes: 'direction,action',
+                //language: 'en-us',
+                return: 'polyline'
+            };
+            router.calculateRoute(routeRequestParams, onSuccess, onError);
+        }
+        
+        function onSuccess(result) {
+            // Ensure that at least one route was found
+            if (result.routes.length) {
+                result.routes[0].sections.forEach((section) => {
+                    // Create a linestring to use as a point source for the route line
+                    let linestring = H.geo.LineString.fromFlexiblePolyline(section.polyline);
+
+                    // Create a polyline to display the route
+                    let routeLine = new H.map.Polyline(linestring, {
+                        style: { strokeColor: 'blue', lineWidth: 3 }
+                    });
+
+                    // Add the route polyline and the markers to the map
+                    map.removeObjects(map.getObjects());
+                    map.addObjects([routeLine, originMarker, destinationMarker]);
+
+                    // Set the map's viewport to make the whole route visible
+                    map.getViewModel().setLookAtData({bounds: routeLine.getBoundingBox()});
+                });
+            }
+        }
+
+        function onError(error) {
+            console.error('Error calculating the route:', error);
+            alert(String(error.message));
+        }
+    </script>
+</body>
+</html>
