@@ -99,7 +99,6 @@
 
             // Use the Geocoding and Search service to find places
             const geocodingService = platform.getSearchService();
-
             geocodingService.geocode(
                 {
                     q: origin,
@@ -115,16 +114,13 @@
                             q: destination,
                         },
                         (destinationResult) => {
-                            if (destinationResult.items.length > 0) {
-                                destinationLocation = destinationResult.items[0].position;
-                                var destinationCoordinates = String(destinationLocation.lat)+","+String(destinationLocation.lng);
-                                var originCoordinates = String(originLocation.lat)+","+String(originLocation.lng);
-                                findRoute(originCoordinates, destinationCoordinates);
-
+                            if (destinationResult.items.length === 0) {
+                                alert(String('destination not found')); 
                             } 
-                            else {
-                                alert(String('destination not found'));
-                            }
+                            destinationLocation = destinationResult.items[0].position;
+                            var destinationCoordinates = String(destinationLocation.lat)+","+String(destinationLocation.lng);
+                            var originCoordinates = String(originLocation.lat)+","+String(originLocation.lng);
+                            findRoute(originCoordinates, destinationCoordinates);
                         },
                         (error) => {
                             console.error('Error:', error.message);
